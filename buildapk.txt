@@ -1,0 +1,34 @@
+apk Build Steps:
+
+1. gen R.java
+aapt package -fm -J gen -S res -M AndroidManifest.xml -I /home/zgx2012/android-sdk-linux/platforms/android-10/android.jar
+说明：-J后面跟的是生成目录；-S后面跟的是资源目录；-M后面跟的是AndroidManifest.xml；-I后面跟的是使用的AndroidAPI的jar
+
+2. 使用aidl把.aidl转成.java文件（如果没有aidl，则跳过这一步）
+
+3. 生成.class文件
+javac -encoding utf-8 -target 1.6 -d bin -bootclasspath /home/zgx2012/android-sdk-linux/platforms/android-10/android.jar gen/com/thinkfeed/bouncelistview/R.java src/com/thinkfeed/bouncelistview/BounceListView*.java
+说明：-target：生成特定 VM 版本的类文件；-d：指定存放生成的类文件的位置；-bootclasspath：覆盖引导类文件的位置；
+
+4. 使用dx命令行脚本生成classes.dex文件
+dx --dex --output=./bin/classes.dex ./bin/
+说明：--output：生成的dex文件；最后带上class文件所在目录；
+
+5. 使用aapt生成资源包文件
+aapt package -f -S res -M AndroidManifest.xml -I /home/zgx2012/android-sdk-linux/platforms/android-10/android.jar -F ./bin/resources.ap_
+说明：-S：资源目录；-M：AndroidManifest.xml文件；-I：导入用的jar文件；-F：生成的资源文件；
+
+6. 使用apkbuilder生成未签名的apk安装文件
+/home/zgx2012/android-sdk-linux/tools/apkbuilder ./bin/BounceListView.apk -u -z ./bin/resources.ap_ -f ./bin/classes.dex -rf ./src/
+（使用该命令时：会提示该工具已过时，Google不推荐使用。而推荐使用的是：com.android.ant.ApkBuilderTask）
+说明：-z：资源打包文件；-f：类打包文件；-rf：源代码目录；
+
+7. 使用jarsigner对未签名的包进行apk签名
+jarsigner -keystore /home/zgx2012/mykeystore/magic.keystore -storepass teststorepass -keypass testkeypass -signedjar ./bin/signed.apk ./bin/BounceListView.apk magic
+说明：-keystore：keystore文件；-signedjar：签名后的文件；后面还有未签名文件和key的alias
+#**************************************************
+#keytool -genkey -alias android.keystore -keyalg RSA -validity 100000 -keystore android.keystore
+#**************************************************
+
+8. 签名之后，用zipalign(压缩对齐)优化你的APK文件
+
