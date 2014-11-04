@@ -20,4 +20,3 @@ Example:
     Then, It will generate signed and zipaligned bin/final_signed_hello.apk.
     Besides, It will generate non-signed bin/hello.apk, signed bin/signed_hello.apk
 
-
