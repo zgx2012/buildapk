@@ -2,8 +2,10 @@
 #=========================================================
 # path condition:
 #      AndroidManifest.xml
-#      src
+#      java
 #      res
+#
+# path output:
 #      gen
 #      bin
 # 
@@ -20,7 +22,7 @@
 
 
 storepass=teststorepass
-keypass=testkeypass
+keypass=teststorepass
 
 while getopts "p:n:s:k:h" arg
 do
@@ -81,11 +83,11 @@ if [[ ".apk" != "$target_apk" ]]; then
     echo "append suffix .apk"
     target_apk="$target_apk.apk"
 fi
-target_sdk_ver="android-4.2"
+target_sdk_ver="android-24"
 target_sdk_path=$sdk_home/platforms/$target_sdk_ver
 target_sdk=$target_sdk_path/android.jar
-AAPT=$sdk_home/platform-tools/aapt
-DX=$sdk_home/platform-tools/dx
+AAPT=$sdk_home/build-tools/23.0.2/aapt
+DX=$sdk_home/build-tools/23.0.2/dx
 APKBUILDER=$sdk_home/tools/apkbuilder
 
 if [ ! -d $target_path ]; then
@@ -105,8 +107,8 @@ if [ ! -d res ]; then
     exit 1
 fi
 
-if [ ! -d src ]; then
-    echo "Error: no such dir src in $target_path"
+if [ ! -d java ]; then
+    echo "Error: no such dir java in $target_path"
     exit 1
 fi
 
@@ -130,9 +132,13 @@ $AAPT package -fm -J gen -S res -M AndroidManifest.xml -I $target_sdk
 #find -name "*.java" -and -not -name ".*" > sources.list
 echo ""
 echo "javac java file to class file"
-libs=$(ls $PWD/libs/*.jar)
-libs=$(echo -n $libs | sed -e "s/ /:/g")
-javac -encoding utf-8 -target 1.6 -d bin -bootclasspath $target_sdk:$libs $(find -name "*.java" -and -not -name ".*")
+if [ -d $PWD/libs ]; then
+  libs=$(ls $PWD/libs/*.jar)
+  libs=$(echo -n $libs | sed -e "s/ /:/g")
+  javac -encoding utf-8 -target 1.6 -source 1.6 -d bin -bootclasspath $target_sdk:$libs $(find ./java ./gen -name "*.java" -and -not -name ".*")
+else
+  javac -encoding utf-8 -target 1.6 -source 1.6 -d bin -bootclasspath $target_sdk $(find ./java ./gen -name "*.java" -and -not -name ".*")
+fi
 if [ $? == 0 ] ; then
   echo "javac OK !"
 else
@@ -165,7 +171,7 @@ fi
 #step 6
 echo ""
 echo "start build apk"
-$APKBUILDER ./bin/$target_apk -u -z ./bin/resources.ap_ -f ./bin/classes.dex -rf ./src/
+$APKBUILDER ./bin/$target_apk -u -z ./bin/resources.ap_ -f ./bin/classes.dex -rf ./java/
 if [ $? == 0 ] ; then
   echo "build apk OK !"
 else
